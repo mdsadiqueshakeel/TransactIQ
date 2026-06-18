@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, PostgresDsn, RedisDsn
+from pydantic import Field, PostgresDsn, RedisDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     upload_dir: Path = Path("/app/storage/uploads")
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-1.5-flash"
+
+    @field_validator("gemini_api_key")
+    @classmethod
+    def normalize_gemini_api_key(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
 
     model_config = SettingsConfigDict(
         env_file=".env",

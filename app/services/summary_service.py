@@ -1,4 +1,5 @@
 from collections import defaultdict
+import logging
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -8,6 +9,8 @@ from sqlalchemy.orm import Session
 from app.models.transaction import Transaction
 from app.repositories.summary_repository import SummaryRepository
 from app.services.gemini_service import GeminiService
+
+logger = logging.getLogger(__name__)
 
 
 class SummaryService:
@@ -30,7 +33,15 @@ class SummaryService:
             narrative, risk_level = self.gemini_service.generate_summary_narrative(
                 aggregates
             )
-        except Exception:
+        except Exception as exc:
+            logger.exception(
+                "Gemini summary generation failed",
+                extra={
+                    "job_id": str(job_id),
+                    "error_type": type(exc).__name__,
+                    "error_message": str(exc),
+                },
+            )
             llm_failed = True
             narrative = "Spending summary narrative is unavailable."
 

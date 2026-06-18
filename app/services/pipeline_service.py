@@ -145,6 +145,15 @@ class PipelineService:
                     for transaction in batch
                 ]
             except Exception as exc:
+                logger.exception(
+                    "Gemini category classification failed",
+                    extra={
+                        "job_id": str(job_id),
+                        "batch_size": len(batch),
+                        "error_type": type(exc).__name__,
+                        "error_message": str(exc),
+                    },
+                )
                 llm_failed = True
                 updates = [
                     {

@@ -23,6 +23,11 @@ router = APIRouter(prefix="/jobs", tags=["jobs"])
     status_code=status.HTTP_202_ACCEPTED,
     summary="Upload transaction CSV",
     description="Uploads a CSV file, creates a pending job, stores the file, and enqueues asynchronous processing.",
+    response_description="Created job identifier and initial pending status.",
+    responses={
+        400: {"description": "Invalid, empty, or non-CSV upload."},
+        500: {"description": "Job creation failed."},
+    },
 )
 def upload_job(
     file: UploadFile = File(...),
@@ -50,6 +55,7 @@ def upload_job(
     response_model=list[JobListItem],
     summary="List jobs",
     description="Lists all processing jobs and optionally filters them by status.",
+    response_description="Jobs ordered by newest first.",
 )
 def list_jobs(
     status_filter: JobStatus | None = Query(default=None, alias="status"),
@@ -64,6 +70,8 @@ def list_jobs(
     response_model=JobStatusResponse,
     summary="Get job status",
     description="Returns the current status for a job and includes summary data when the job is completed.",
+    response_description="Current job status and optional summary.",
+    responses={404: {"description": "Job not found."}},
 )
 def get_job_status(
     job_id: uuid.UUID,
@@ -84,6 +92,8 @@ def get_job_status(
     response_model=JobResultsResponse,
     summary="Get job results",
     description="Returns cleaned transactions, anomalies, category breakdown, and summary for a job.",
+    response_description="Full processed job output.",
+    responses={404: {"description": "Job not found."}},
 )
 def get_job_results(
     job_id: uuid.UUID,

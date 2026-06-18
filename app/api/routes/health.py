@@ -12,6 +12,7 @@ router = APIRouter(tags=["health"])
     "/health",
     summary="Check service health",
     description="Verifies that the API is running and can connect to PostgreSQL.",
+    response_description="Service and database health status.",
 )
 def health_check(db: Session = Depends(get_db)) -> dict[str, str]:
     db.execute(text("SELECT 1"))

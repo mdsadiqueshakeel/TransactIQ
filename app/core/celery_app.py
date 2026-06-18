@@ -2,9 +2,11 @@ from celery import Celery
 
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.core.startup import validate_startup_configuration
 
 settings = get_settings()
 configure_logging()
+validate_startup_configuration()
 
 celery_app = Celery(
     "transactiq",

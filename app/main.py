@@ -6,11 +6,13 @@ from fastapi import FastAPI
 from app.api.routes import health, jobs
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.core.startup import validate_startup_configuration
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     configure_logging()
+    validate_startup_configuration()
     yield
 
 
