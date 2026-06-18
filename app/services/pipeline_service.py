@@ -130,10 +130,31 @@ class PipelineService:
                 }
                 for transaction in batch
             ]
+            requested_ids = [item["id"] for item in payload]
+            logger.info(
+                "Rows sent to Gemini for category classification",
+                extra={
+                    "job_id": str(job_id),
+                    "batch_size": len(batch),
+                    "requested_ids": requested_ids,
+                    "rows": payload,
+                },
+            )
 
             try:
                 categories, raw_response = self.gemini_service.classify_categories(
                     payload
+                )
+                returned_ids = set(categories.keys())
+                logger.info(
+                    "Parsed Gemini categories returned",
+                    extra={
+                        "job_id": str(job_id),
+                        "requested_ids": requested_ids,
+                        "returned_ids": sorted(returned_ids),
+                        "missing_ids": sorted(set(requested_ids) - returned_ids),
+                        "parsed_categories": categories,
+                    },
                 )
                 updates = [
                     {
@@ -165,7 +186,16 @@ class PipelineService:
                     for transaction in batch
                 ]
 
-            self.transaction_repository.update_categories(updates)
+            updated_count = self.transaction_repository.update_categories(updates)
+            logger.info(
+                "Category rows updated",
+                extra={
+                    "job_id": str(job_id),
+                    "requested_update_count": len(updates),
+                    "updated_count": updated_count,
+                    "updated_ids": [str(update["id"]) for update in updates],
+                },
+            )
 
         logger.info(
             "Categories classified",

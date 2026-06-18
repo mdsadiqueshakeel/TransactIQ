@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 from sqlalchemy import delete, select
+from sqlalchemy import update as sqlalchemy_update
 from sqlalchemy.orm import Session
 
 from app.models.transaction import Transaction
@@ -61,12 +62,19 @@ class TransactionRepository:
     def update_categories(
         self,
         updates: list[dict[str, Any]],
-    ) -> None:
+    ) -> int:
+        updated_count = 0
         for update in updates:
-            transaction = self.db.get(Transaction, update["id"])
-            if transaction is None:
-                continue
-            transaction.final_category = update["final_category"]
-            transaction.llm_raw_response = update.get("llm_raw_response")
-            transaction.llm_failed = update.get("llm_failed", False)
+            result = self.db.execute(
+                sqlalchemy_update(Transaction)
+                .where(Transaction.id == update["id"])
+                .values(
+                    final_category=update["final_category"],
+                    llm_raw_response=update.get("llm_raw_response"),
+                    llm_failed=update.get("llm_failed", False),
+                )
+                .execution_options(synchronize_session="fetch")
+            )
+            updated_count += result.rowcount or 0
         self.db.flush()
+        return updated_count

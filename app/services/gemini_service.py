@@ -77,6 +77,13 @@ class GeminiService:
                 category if category in ALLOWED_CATEGORIES else "Other"
             )
 
+        logger.info(
+            "Gemini category response parsed",
+            extra={
+                "returned_ids": list(categories.keys()),
+                "parsed_categories": categories,
+            },
+        )
         return categories, response_text
 
     @retry(

@@ -1,31 +1,90 @@
 # TransactIQ
 
-AI-powered transaction processing pipeline for dirty financial CSV exports.
+TransactIQ is a production-style backend assignment for an AI-powered transaction processing pipeline. It accepts a dirty financial transaction CSV, processes it asynchronously, cleans and stores transaction data, detects anomalies, uses Gemini for missing category classification and narrative summary generation, and exposes polling APIs through FastAPI.
 
-TransactIQ accepts a transaction CSV, creates an asynchronous processing job, cleans and persists transactions, detects anomalies, uses Gemini 1.5 Flash for missing category classification and narrative summary generation, and exposes polling APIs for status and results.
-
-## Architecture
+The intended reviewer workflow is through Swagger UI:
 
 ```text
-Client
-  -> FastAPI API
-      -> PostgreSQL: jobs, transactions, summaries
-      -> Redis: Celery broker/result backend
-      -> storage/uploads/{job_id}.csv
-  -> Celery Worker
-      -> PostgreSQL
-      -> Redis
-      -> Gemini 1.5 Flash
+http://localhost:8000/docs
 ```
 
-Draw.io compatible diagram:
+## Problem Statement
+
+Financial exports often contain inconsistent dates, mixed casing, duplicate rows, missing categories, currency symbols in amount fields, and suspicious transactions. A synchronous upload endpoint would block while processing and would be fragile under larger files or LLM latency.
+
+TransactIQ solves this by creating a job immediately, queueing processing work in Celery, and allowing reviewers to poll for status and results.
+
+## Solution Overview
+
+1. A reviewer uploads `transactions.csv` from Swagger UI.
+2. FastAPI validates the upload, creates a `pending` job, saves the CSV, and pushes a task to Redis.
+3. Celery reads the CSV, cleans rows, bulk inserts transactions, detects anomalies, calls Gemini, creates a summary, and marks the job `completed`.
+4. Swagger UI is used to inspect job status and full results.
+
+## Key Features
+
+- CSV upload with file validation.
+- Asynchronous job processing with Celery and Redis.
+- PostgreSQL persistence using SQLAlchemy models and Alembic migrations.
+- Data cleaning for dates, amounts, currency, status, duplicates, and missing categories.
+- Rule-based anomaly detection.
+- Gemini 1.5 Flash category classification for missing categories.
+- Gemini narrative summary and risk level generation.
+- Results endpoint with cleaned transactions, anomalies, category breakdown, and summary.
+- Swagger/OpenAPI documentation for reviewer-friendly testing.
+- Graceful LLM failure handling with structured logs.
+
+## Architecture Overview
+
+```text
+User
+ |
+Swagger UI
+ |
+FastAPI
+ |
+Redis Queue
+ |
+Celery Worker
+ |--------> PostgreSQL
+ |
+Gemini 1.5 Flash
+ |
+Results API
+```
+
+Detailed draw.io compatible architecture diagram:
 
 ```text
 docs/architecture.drawio
 ```
 
-## Stack
+Request lifecycle:
 
+```text
+CSV Upload
+ -> Job Creation
+ -> Redis Queue
+ -> Celery Worker
+ -> Cleaning
+ -> Persistence
+ -> Anomaly Detection
+ -> Gemini Classification
+ -> Summary Generation
+ -> Results
+```
+
+## Component Responsibilities
+
+- `FastAPI`: exposes health, upload, job listing, status, and results APIs.
+- `Redis`: stores Celery queue messages and worker coordination state.
+- `Celery Worker`: performs CSV processing outside the request-response path.
+- `PostgreSQL`: stores jobs, cleaned transactions, anomaly flags, LLM metadata, and summaries.
+- `Gemini`: classifies missing categories and generates narrative/risk summary text.
+
+## Technology Stack
+
+- Python 3.12
 - FastAPI
 - PostgreSQL
 - Redis
@@ -36,60 +95,19 @@ docs/architecture.drawio
 - Gemini 1.5 Flash
 - Docker Compose
 
-## Setup
+## Local Setup
 
-Create `.env` from `.env.example` and set your Gemini API key:
+Create a local environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Required Gemini variable:
+Set a real Gemini key in `.env`:
 
 ```text
-GEMINI_API_KEY=your_real_key_here
+GEMINI_API_KEY=your_real_gemini_api_key
 GEMINI_MODEL=gemini-1.5-flash
-```
-
-Start everything:
-
-```bash
-docker compose up --build
-```
-
-The API runs at:
-
-```text
-http://localhost:8000
-```
-
-OpenAPI docs:
-
-```text
-http://localhost:8000/docs
-```
-
-## Docker Setup
-
-Docker Compose starts four services:
-
-- `api`: FastAPI application. Runs Alembic migrations on startup.
-- `worker`: Celery worker. Processes uploaded CSV jobs.
-- `postgres`: PostgreSQL database with persistent volume.
-- `redis`: Celery broker and result backend.
-
-## Running Migrations
-
-Migrations run automatically when the API container starts:
-
-```bash
-docker compose up --build
-```
-
-Run migrations manually:
-
-```bash
-docker compose run --rm api alembic upgrade head
 ```
 
 ## Environment Variables
@@ -110,125 +128,179 @@ GEMINI_API_KEY=
 GEMINI_MODEL=gemini-1.5-flash
 ```
 
-## API Endpoints
+## Docker Setup
 
-- `GET /health`
-- `POST /jobs/upload`
-- `GET /jobs`
-- `GET /jobs?status=pending`
-- `GET /jobs/{job_id}/status`
-- `GET /jobs/{job_id}/results`
-
-## Example Curl Commands
-
-Health:
+Start the complete system:
 
 ```bash
-curl http://localhost:8000/health
+docker compose up --build
 ```
 
-Upload CSV:
+Docker Compose starts:
+
+- `api`: FastAPI app and Alembic startup migration.
+- `worker`: Celery worker for transaction processing.
+- `postgres`: PostgreSQL database with persistent volume.
+- `redis`: Celery broker/result backend.
+
+## Running Migrations
+
+Migrations run automatically when the API container starts.
+
+Manual migration command:
 
 ```bash
-curl -X POST http://localhost:8000/jobs/upload \
-  -F "file=@transactions.csv"
+docker compose run --rm api alembic upgrade head
 ```
 
-List jobs:
+## Running the System
 
-```bash
-curl http://localhost:8000/jobs
-```
+1. Run `docker compose up --build`.
+2. Open Swagger UI at `http://localhost:8000/docs`.
+3. Use `POST /jobs/upload` to upload `transactions.csv`.
+4. Copy the returned `job_id`.
+5. Use `GET /jobs/{job_id}/status` until the job is `completed`.
+6. Use `GET /jobs/{job_id}/results` to inspect cleaned transactions, anomalies, categories, and summary.
 
-Filter jobs:
+## Swagger UI Usage
 
-```bash
-curl "http://localhost:8000/jobs?status=completed"
-```
+Swagger UI is the official testing interface for this submission.
 
-Poll status:
-
-```bash
-curl http://localhost:8000/jobs/{job_id}/status
-```
-
-Fetch results:
-
-```bash
-curl http://localhost:8000/jobs/{job_id}/results
-```
-
-## Processing Pipeline
+Open:
 
 ```text
-Upload CSV
-  -> Create pending Job
-  -> Queue Celery task
-  -> Load CSV with pandas
-  -> Validate required columns
-  -> Clean data
-  -> Bulk insert transactions
-  -> Detect anomalies
-  -> Classify missing categories with Gemini
-  -> Generate summary with Gemini
-  -> Store job summary
-  -> Mark job completed
+http://localhost:8000/docs
 ```
 
-## Gemini Setup
+Recommended demo flow:
 
-1. Create a Gemini API key from Google AI Studio.
-2. Put the key in `.env` as `GEMINI_API_KEY`.
-3. Restart Docker Compose after changing `.env`.
-4. Check logs for `Gemini configuration detected`.
+1. Expand `GET /health` and execute it.
+2. Expand `POST /jobs/upload`, choose `transactions.csv`, and execute.
+3. Copy the returned `job_id`.
+4. Expand `GET /jobs` and execute.
+5. Expand `GET /jobs/{job_id}/status`, paste the UUID, and execute.
+6. Expand `GET /jobs/{job_id}/results`, paste the UUID, and execute.
 
-If `GEMINI_API_KEY` is missing, the job still completes, but:
+## API Documentation
 
-- `jobs.llm_failed` becomes `true`
-- category rows that needed Gemini stay gracefully handled
-- summary narrative falls back to deterministic text
+### Upload CSV
 
-## Troubleshooting
-
-`llm_failed=true`:
-
-- Confirm `.env` exists, not only `.env.example`.
-- Confirm `GEMINI_API_KEY` is set in `.env`.
-- Confirm the worker container sees the key with `docker compose exec worker env`.
-- Restart containers with `docker compose up --build`.
-- Check worker logs for `Gemini SDK initialized`.
-- Check worker logs for exact Gemini API exception type and message.
-
-`row_count_clean=0`:
-
-- Check worker logs.
-- Confirm the CSV has all required columns.
-- Confirm the worker container is running.
-
-`GET /jobs/{job_id}/results` returns empty transactions:
-
-- Confirm the job status is `completed`.
-- Confirm the worker processed the queue.
-- Confirm PostgreSQL migrations ran.
-
-`GeminiUnavailableError`:
-
-- The worker is running without `GEMINI_API_KEY`.
-- Add the key to `.env`.
-- Recreate containers with `docker compose up --build`.
-
-## Final Validation
-
-Use:
+Swagger operation:
 
 ```text
-docs/final_validation_checklist.md
+POST /jobs/upload
 ```
 
-## Technical Review
-
-Use:
+Purpose:
 
 ```text
-docs/technical_review.md
+Uploads transactions.csv, creates a pending job, stores the file, and queues Celery processing.
 ```
+
+Swagger screenshot placeholder:
+
+```text
+docs/screenshots/swagger-upload-placeholder.png
+```
+
+### Get Jobs
+
+Swagger operation:
+
+```text
+GET /jobs
+```
+
+Purpose:
+
+```text
+Lists jobs with filename, status, raw row count, clean row count, and created timestamp.
+```
+
+### Get Job Status
+
+Swagger operation:
+
+```text
+GET /jobs/{job_id}/status
+```
+
+Purpose:
+
+```text
+Returns pending, processing, completed, or failed. Includes summary when available.
+```
+
+### Get Results
+
+Swagger operation:
+
+```text
+GET /jobs/{job_id}/results
+```
+
+Purpose:
+
+```text
+Returns job metadata, summary, anomalies, category breakdown, and cleaned transactions.
+```
+
+## Gemini Integration
+
+Gemini 1.5 Flash is used for:
+
+- Missing category classification.
+- Narrative summary and risk level generation.
+
+Category classification only runs for transactions where `original_category IS NULL`.
+
+Allowed categories:
+
+```text
+Food
+Shopping
+Travel
+Transport
+Utilities
+Cash Withdrawal
+Entertainment
+Other
+```
+
+If Gemini is missing, unavailable, or returns invalid JSON, the job still completes and records `llm_failed=true`. Worker logs include the exact Gemini exception type and message.
+
+## Error Handling
+
+- Invalid file type: rejected with `400`.
+- Empty upload: rejected with `400`.
+- Missing CSV columns: job is marked `failed`.
+- CSV parsing/cleaning failure: job is marked `failed`.
+- Database failure during upload: returns `500`.
+- Gemini failure: job continues with graceful fallback and `llm_failed=true`.
+- Missing `GEMINI_API_KEY`: startup logs an error and LLM steps use fallback behavior.
+
+## Scalability Considerations
+
+- Pandas currently loads the whole CSV in memory.
+- Redis queue depth grows if workers cannot keep up.
+- Gemini rate limits can slow category classification and summaries.
+- Polling APIs read directly from PostgreSQL.
+- Local upload volume is assignment-friendly but not production-grade object storage.
+
+## Future Improvements
+
+- Store uploads in S3 or GCS.
+- Replace Redis queue with Kafka for high-throughput event streaming.
+- Run API and worker deployments on Kubernetes.
+- Horizontally scale Celery workers by workload type.
+- Add PostgreSQL read replicas for heavy results traffic.
+- Add metrics, tracing, and dashboarding.
+- Add authentication and per-user job ownership.
+- Add integration tests with a mocked Gemini client.
+
+## Supporting Review Docs
+
+- `docs/final_validation_checklist.md`
+- `docs/review_prep.md`
+- `docs/demo_video_script.md`
+- `docs/final_repository_audit.md`

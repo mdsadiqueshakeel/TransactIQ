@@ -2,45 +2,73 @@
 
 ## Dead Code
 
-- Placeholder service files are now implemented for processing, anomaly detection, Gemini, and summary generation.
-- No separate anomalies table exists, by design.
+Finding:
+
+- No separate anomaly table exists, by assignment decision.
+- Placeholder service files have been replaced with implementations.
+
+Action:
+
+- No dead code removal required for final submission.
 
 ## Unused Imports
 
-- No obvious unused imports remain from the implemented service path.
-- Run a linter such as Ruff before final submission for stricter static checks.
+Finding:
+
+- No obvious unused imports were found in the main request/worker path.
+
+Action:
+
+- Run Ruff before submission if an additional static lint pass is desired.
+
+## Unused Files
+
+Finding:
+
+- `docs/architecture.drawio`, `docs/final_validation_checklist.md`, `docs/review_prep.md`, and `docs/demo_video_script.md` are submission-support artifacts.
+
+Action:
+
+- Keep these files for reviewer readiness.
 
 ## Missing Environment Variables
 
-- `GEMINI_API_KEY` must be set in `.env`.
-- `.env.example` is only a template and is not a real configured environment.
-- `GEMINI_MODEL` defaults to `gemini-1.5-flash`.
+Finding:
+
+- `GEMINI_API_KEY` must be provided in `.env`.
+- `.env.example` is only a template.
 
 Action:
 
 - Create `.env` from `.env.example`.
-- Set a real Gemini API key.
-- Restart API and worker containers.
+- Set `GEMINI_API_KEY`.
+- Keep `GEMINI_MODEL=gemini-1.5-flash`.
+- Restart containers after changing `.env`.
 
-## Migration Issues
+## Migration Concerns
 
-- Existing migration creates `jobs`, `transactions`, and `job_summaries`.
-- No schema migration is required for Phase 4/5 because anomaly, LLM, and summary fields already exist.
+Finding:
+
+- The existing initial migration creates all required tables and fields for phases 1-5.
+- No additional migration is required for anomaly detection, Gemini metadata, or summaries.
 
 Action:
 
-- Confirm `alembic upgrade head` runs during API container startup.
+- Confirm API startup runs `alembic upgrade head`.
 
 ## Deployment Risks
 
-- If `GEMINI_API_KEY` is missing or invalid, jobs complete with `llm_failed=true`.
-- Gemini rate limits can delay category classification and summary generation.
-- Large CSVs are currently loaded fully into memory with pandas.
-- Local Docker volume storage is acceptable for assignment review but should become object storage in production.
-- Polling endpoints currently read directly from PostgreSQL.
+Finding:
+
+- Large CSVs are loaded fully in memory with pandas.
+- Local shared upload storage is not production-grade.
+- Gemini latency and rate limits can slow job completion.
+- Polling endpoints read from PostgreSQL directly.
 
 Action:
 
-- Monitor worker logs for Gemini failures.
-- Add object storage for uploads before production use.
-- Add Redis-backed status caching if polling load increases.
+- Use S3/GCS for uploads in production.
+- Add Kafka or managed queues for high-throughput processing.
+- Horizontally scale workers.
+- Add read replicas and caching for results/status reads.
+- Add metrics, tracing, and alerting.

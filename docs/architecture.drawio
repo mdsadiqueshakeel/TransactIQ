@@ -1,52 +1,64 @@
 <mxfile host="app.diagrams.net">
   <diagram name="TransactIQ Architecture">
-    <mxGraphModel dx="1114" dy="720" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+    <mxGraphModel dx="1280" dy="720" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
       <root>
         <mxCell id="0"/>
         <mxCell id="1" parent="0"/>
-        <mxCell id="client" value="Client / Reviewer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
-          <mxGeometry x="60" y="160" width="140" height="60" as="geometry"/>
+        <mxCell id="user" value="User / Reviewer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="170" width="140" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="api" value="FastAPI&#xa;/jobs/upload&#xa;/jobs/status&#xa;/jobs/results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
-          <mxGeometry x="280" y="140" width="170" height="100" as="geometry"/>
+        <mxCell id="swagger" value="Swagger UI&#xa;http://localhost:8000/docs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1f5fe;strokeColor=#0288d1;" vertex="1" parent="1">
+          <mxGeometry x="230" y="160" width="170" height="80" as="geometry"/>
         </mxCell>
-        <mxCell id="redis" value="Redis&#xa;Celery Broker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
-          <mxGeometry x="540" y="80" width="150" height="70" as="geometry"/>
+        <mxCell id="api" value="FastAPI&#xa;Upload, Jobs, Status, Results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="460" y="150" width="180" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="worker" value="Celery Worker&#xa;CSV Clean&#xa;Anomaly Detect&#xa;Gemini Calls" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
-          <mxGeometry x="760" y="130" width="170" height="110" as="geometry"/>
+        <mxCell id="redis" value="Redis Queue&#xa;Celery Broker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="720" y="80" width="150" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="worker" value="Celery Worker&#xa;Clean, Persist, Detect, Enrich" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="940" y="140" width="180" height="100" as="geometry"/>
         </mxCell>
         <mxCell id="postgres" value="PostgreSQL&#xa;jobs&#xa;transactions&#xa;job_summaries" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
-          <mxGeometry x="530" y="290" width="170" height="120" as="geometry"/>
+          <mxGeometry x="700" y="310" width="180" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="gemini" value="Gemini 1.5 Flash&#xa;Categories + Narrative" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="950" y="320" width="170" height="80" as="geometry"/>
         </mxCell>
         <mxCell id="storage" value="Shared Upload Volume&#xa;storage/uploads/{job_id}.csv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
-          <mxGeometry x="280" y="300" width="190" height="70" as="geometry"/>
+          <mxGeometry x="460" y="330" width="190" height="70" as="geometry"/>
         </mxCell>
-        <mxCell id="gemini" value="Gemini 1.5 Flash&#xa;Category Classification&#xa;Narrative Summary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="990" y="150" width="170" height="90" as="geometry"/>
+        <mxCell id="results" value="Results API&#xa;/jobs/{job_id}/results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="460" y="480" width="180" height="70" as="geometry"/>
         </mxCell>
-        <mxCell id="e1" value="HTTP upload / polling" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="client" target="api">
+        <mxCell id="e1" value="Open docs" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="user" target="swagger">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="e2" value="create job / read status" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="api" target="postgres">
+        <mxCell id="e2" value="Upload CSV / Poll" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="swagger" target="api">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="e3" value="enqueue task" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="api" target="redis">
+        <mxCell id="e3" value="Enqueue job" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="api" target="redis">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="e4" value="consume task" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="redis" target="worker">
+        <mxCell id="e4" value="Consume job" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="redis" target="worker">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="e5" value="save CSV" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="api" target="storage">
+        <mxCell id="e5" value="Save CSV" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="api" target="storage">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="e6" value="read CSV" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="storage" target="worker">
+        <mxCell id="e6" value="Read CSV" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="storage" target="worker">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="e7" value="persist cleaned data" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="worker" target="postgres">
+        <mxCell id="e7" value="Persist jobs + transactions + summary" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="worker" target="postgres">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="e8" value="classify / summarize" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="worker" target="gemini">
+        <mxCell id="e8" value="Classify + summarize" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="worker" target="gemini">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e9" value="Read results" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="api" target="postgres">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e10" value="Return processed output" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="api" target="results">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
       </root>
