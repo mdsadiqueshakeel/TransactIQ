@@ -5,6 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 from app.schemas.summary import JobSummaryResponse
+from app.schemas.transaction import TransactionResponse
 
 
 class JobStatus(StrEnum):
@@ -37,3 +38,11 @@ class JobStatusResponse(BaseModel):
     completed_at: datetime | None
     error_message: str | None
     summary: JobSummaryResponse | None = None
+
+
+class JobResultsResponse(BaseModel):
+    job: JobListItem
+    summary: JobSummaryResponse | None
+    anomalies: list[TransactionResponse]
+    category_breakdown: dict
+    transactions: list[TransactionResponse]

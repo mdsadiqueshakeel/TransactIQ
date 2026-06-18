@@ -5,7 +5,13 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db
-from app.schemas.job import JobListItem, JobStatus, JobStatusResponse, JobUploadResponse
+from app.schemas.job import (
+    JobListItem,
+    JobResultsResponse,
+    JobStatus,
+    JobStatusResponse,
+    JobUploadResponse,
+)
 from app.services.job_service import InvalidUploadError, JobNotFoundError, JobService
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -66,6 +72,26 @@ def get_job_status(
     service = JobService(db)
     try:
         return service.get_job_status(job_id)
+    except JobNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+
+@router.get(
+    "/{job_id}/results",
+    response_model=JobResultsResponse,
+    summary="Get job results",
+    description="Returns cleaned transactions, anomalies, category breakdown, and summary for a job.",
+)
+def get_job_results(
+    job_id: uuid.UUID,
+    db: Session = Depends(get_db),
+) -> JobResultsResponse:
+    service = JobService(db)
+    try:
+        return service.get_job_results(job_id)
     except JobNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

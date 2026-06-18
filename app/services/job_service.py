@@ -9,7 +9,15 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.repositories.job_repository import JobRepository
 from app.repositories.summary_repository import SummaryRepository
-from app.schemas.job import JobListItem, JobStatus, JobStatusResponse, JobUploadResponse
+from app.repositories.transaction_repository import TransactionRepository
+from app.schemas.job import (
+    JobListItem,
+    JobResultsResponse,
+    JobStatus,
+    JobStatusResponse,
+    JobUploadResponse,
+)
+from app.schemas.transaction import TransactionResponse
 from app.utils.file_storage import FileStorage
 from app.workers.tasks import process_transaction_job
 
@@ -27,6 +35,7 @@ class JobService:
         self.db = db
         self.job_repository = JobRepository(db)
         self.summary_repository = SummaryRepository(db)
+        self.transaction_repository = TransactionRepository(db)
         self.storage = FileStorage(get_settings().upload_dir)
 
     def create_upload_job(self, upload: UploadFile) -> JobUploadResponse:
@@ -69,6 +78,29 @@ class JobService:
             completed_at=job.completed_at,
             error_message=job.error_message,
             summary=summary,
+        )
+
+    def get_job_results(self, job_id: uuid.UUID) -> JobResultsResponse:
+        job = self.job_repository.get_by_id(job_id)
+        if job is None:
+            raise JobNotFoundError(f"Job {job_id} was not found.")
+
+        summary = self.summary_repository.get_by_job_id(job_id)
+        transactions = self.transaction_repository.list_by_job_id(job_id)
+        anomalies = self.transaction_repository.list_anomalies_by_job_id(job_id)
+
+        return JobResultsResponse(
+            job=JobListItem.model_validate(job),
+            summary=summary,
+            anomalies=[
+                TransactionResponse.model_validate(transaction)
+                for transaction in anomalies
+            ],
+            category_breakdown=summary.category_breakdown if summary else {},
+            transactions=[
+                TransactionResponse.model_validate(transaction)
+                for transaction in transactions
+            ],
         )
 
     def _read_upload(self, upload: UploadFile) -> bytes:

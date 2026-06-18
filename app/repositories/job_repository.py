@@ -61,3 +61,33 @@ class JobRepository:
         self.db.flush()
         self.db.refresh(job)
         return job
+
+    def update_row_counts(
+        self,
+        *,
+        job_id: uuid.UUID,
+        row_count_raw: int | None = None,
+        row_count_clean: int | None = None,
+    ) -> Job | None:
+        job = self.get_by_id(job_id)
+        if job is None:
+            return None
+
+        if row_count_raw is not None:
+            job.row_count_raw = row_count_raw
+        if row_count_clean is not None:
+            job.row_count_clean = row_count_clean
+
+        self.db.flush()
+        self.db.refresh(job)
+        return job
+
+    def mark_llm_failed(self, job_id: uuid.UUID) -> Job | None:
+        job = self.get_by_id(job_id)
+        if job is None:
+            return None
+
+        job.llm_failed = True
+        self.db.flush()
+        self.db.refresh(job)
+        return job

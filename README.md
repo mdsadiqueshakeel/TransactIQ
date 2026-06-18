@@ -3,7 +3,7 @@
 AI-powered transaction processing pipeline built with FastAPI, PostgreSQL, Redis,
 Celery, SQLAlchemy, Alembic, and Docker Compose.
 
-This repository is currently at Phase 2: job management and Celery lifecycle.
+This repository is currently at Phase 5: anomaly detection, Gemini enrichment, summaries, and results retrieval.
 
 ## Run
 
@@ -35,7 +35,7 @@ Expected response:
 
 ## Job API
 
-Upload a CSV and enqueue a placeholder processing task:
+Upload a CSV and enqueue asynchronous CSV cleaning:
 
 ```bash
 curl -X POST http://localhost:8000/jobs/upload \
@@ -58,6 +58,12 @@ Poll a job:
 
 ```bash
 curl http://localhost:8000/jobs/{job_id}/status
+```
+
+Fetch results:
+
+```bash
+curl http://localhost:8000/jobs/{job_id}/results
 ```
 
 ## Services
@@ -90,15 +96,24 @@ Implemented:
 - Uploaded file storage as `storage/uploads/{job_id}.csv`
 - Job repository and summary repository
 - Job service orchestration
-- Celery placeholder task for `pending -> processing -> completed`
+- Celery task for `pending -> processing -> completed`
+- CSV loading with pandas
+- Required column validation
+- Date, amount, currency, and status normalization
+- Missing category handling with `Uncategorised`
+- Original and final category tracking
+- Exact duplicate row removal
+- Bulk transaction persistence
+- Cleaned row count tracking
+- Rule-based anomaly detection
+- Gemini missing-category classification
+- Summary generation and persistence
+- `GET /jobs/{job_id}/results`
 
 Not implemented yet:
 
-- Transaction cleaning
-- Anomaly detection
-- Gemini classification
-- Gemini narrative summary
-- Real Celery processing pipeline
+- Authentication
+- Production observability
 
 ## Future Submission Links
 

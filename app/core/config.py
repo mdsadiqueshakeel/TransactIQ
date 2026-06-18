@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     celery_result_backend: RedisDsn = Field(default="redis://redis:6379/1")
 
     upload_dir: Path = Path("/app/storage/uploads")
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-1.5-flash"
 
     model_config = SettingsConfigDict(
         env_file=".env",
