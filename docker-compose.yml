@@ -16,7 +16,7 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       UPLOAD_DIR: /app/storage/uploads
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-1.5-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
     ports:
       - "8000:8000"
     volumes:
@@ -52,7 +52,7 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       UPLOAD_DIR: /app/storage/uploads
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-1.5-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
     volumes:
       - ./storage/uploads:/app/storage/uploads
     depends_on:

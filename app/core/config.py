@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     upload_dir: Path = Path("/app/storage/uploads")
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-1.5-flash"
+    gemini_model: str = "gemini-2.5-flash"
 
     @field_validator("gemini_api_key")
     @classmethod

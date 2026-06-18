@@ -107,7 +107,7 @@ Set a real Gemini key in `.env`:
 
 ```text
 GEMINI_API_KEY=your_real_gemini_api_key
-GEMINI_MODEL=gemini-1.5-flash
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
 ## Environment Variables
@@ -125,7 +125,7 @@ CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/1
 UPLOAD_DIR=/app/storage/uploads
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-1.5-flash
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
 ## Docker Setup

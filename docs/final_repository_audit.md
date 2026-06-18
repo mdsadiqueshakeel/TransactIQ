@@ -42,7 +42,7 @@ Action:
 
 - Create `.env` from `.env.example`.
 - Set `GEMINI_API_KEY`.
-- Keep `GEMINI_MODEL=gemini-1.5-flash`.
+- Keep `GEMINI_MODEL=gemini-2.5-flash`.
 - Restart containers after changing `.env`.
 
 ## Migration Concerns

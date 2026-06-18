@@ -22,7 +22,7 @@
         <mxCell id="postgres" value="PostgreSQL&#xa;jobs&#xa;transactions&#xa;job_summaries" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
           <mxGeometry x="700" y="310" width="180" height="120" as="geometry"/>
         </mxCell>
-        <mxCell id="gemini" value="Gemini 1.5 Flash&#xa;Categories + Narrative" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+        <mxCell id="gemini" value="Gemini 2.5 Flash&#xa;Categories + Narrative" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
           <mxGeometry x="950" y="320" width="170" height="80" as="geometry"/>
         </mxCell>
         <mxCell id="storage" value="Shared Upload Volume&#xa;storage/uploads/{job_id}.csv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">

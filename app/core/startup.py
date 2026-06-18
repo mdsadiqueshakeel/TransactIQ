@@ -13,7 +13,7 @@ def validate_startup_configuration() -> None:
         )
         return
 
-    if settings.gemini_model != "gemini-1.5-flash":
+    if settings.gemini_model != "gemini-2.5-flash":
         logger.warning(
             "Unexpected Gemini model configured",
             extra={"gemini_model": settings.gemini_model},
