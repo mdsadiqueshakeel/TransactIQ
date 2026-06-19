@@ -36,21 +36,31 @@ TransactIQ solves this by creating a job immediately, queueing processing work i
 
 ## Architecture Overview
 
+Primary backend layering:
+
 ```text
-User
- |
-Swagger UI
- |
-FastAPI
- |
-Redis Queue
- |
-Celery Worker
- |--------> PostgreSQL
- |
-Gemini 1.5 Flash
- |
-Results API
+Route -> Service -> Repository -> Model
+```
+
+High-level system architecture:
+
+```mermaid
+flowchart TD
+    User["Reviewer / API Client"] --> Swagger["Swagger UI<br/>http://localhost:8000/docs"]
+    Swagger --> FastAPI["FastAPI Application"]
+    FastAPI --> Routes["API Routes<br/>/health, /jobs/upload, /jobs, /status, /results"]
+    Routes --> Service["Service Layer<br/>JobService, PipelineService, SummaryService"]
+    Service --> Repository["Repository Layer<br/>Job, Transaction, Summary Repositories"]
+    Repository --> Models["SQLAlchemy Models"]
+    Models --> Postgres[("PostgreSQL")]
+    FastAPI --> Storage["Shared Upload Volume<br/>storage/uploads/{job_id}.csv"]
+    FastAPI --> Redis["Redis Queue"]
+    Redis --> Worker["Celery Worker"]
+    Worker --> Pipeline["Processing Pipeline"]
+    Pipeline --> Postgres
+    Pipeline --> Gemini["Gemini 1.5 Flash"]
+    Gemini --> Pipeline
+    FastAPI --> Response["JSON Response"]
 ```
 
 Detailed draw.io compatible architecture diagram:
@@ -61,17 +71,29 @@ docs/architecture.drawio
 
 Request lifecycle:
 
-```text
-CSV Upload
- -> Job Creation
- -> Redis Queue
- -> Celery Worker
- -> Cleaning
- -> Persistence
- -> Anomaly Detection
- -> Gemini Classification
- -> Summary Generation
- -> Results
+```mermaid
+flowchart LR
+    Upload["CSV Upload"] --> Job["Job Created<br/>status=pending"]
+    Job --> Queue["Redis Queue"]
+    Queue --> Worker["Celery Worker<br/>status=processing"]
+    Worker --> Cleaning["Data Cleaning<br/>dates, amounts, casing, duplicates"]
+    Cleaning --> Persistence["Bulk Transaction Persistence"]
+    Persistence --> Anomaly["Anomaly Detection"]
+    Anomaly --> Classification["Gemini Category Classification"]
+    Classification --> Summary["Gemini Narrative Summary"]
+    Summary --> Complete["Job Completed"]
+    Complete --> Results["Results Endpoint"]
+```
+
+Job processing state flow:
+
+```mermaid
+flowchart TD
+    Pending["pending"] --> Processing["processing"]
+    Processing --> Completed["completed"]
+    Processing --> Failed["failed"]
+    Completed --> Results["GET /jobs/{job_id}/results"]
+    Failed --> Error["error_message stored"]
 ```
 
 ## Component Responsibilities
@@ -107,7 +129,7 @@ Set a real Gemini key in `.env`:
 
 ```text
 GEMINI_API_KEY=your_real_gemini_api_key
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-1.5-flash
 ```
 
 ## Environment Variables
@@ -125,7 +147,7 @@ CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/1
 UPLOAD_DIR=/app/storage/uploads
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-1.5-flash
 ```
 
 ## Docker Setup
